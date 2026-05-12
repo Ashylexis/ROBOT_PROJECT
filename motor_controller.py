@@ -57,15 +57,15 @@ class StepperWrapper:
 
 # Initialisierung der 3 Motoren
 try:
-    motor_R = StepperWrapper("Rechts", 18, 26)
-    motor_R.stepper.reverse = True
+    motor_R = StepperWrapper("Rechts", step=26, direction=18)
+    motor_R.stepper.reverse = False  # Versuche reverse wieder
     motor_R.set_wheel(67)
 
-    motor_L = StepperWrapper("Links", 19, 20)
-    motor_L.stepper.reverse = False
+    motor_L = StepperWrapper("Links", step=19, direction=20)
+    motor_L.stepper.reverse = True
     motor_L.set_wheel(67)
 
-    motor_E = StepperWrapper("Gun", 21, 22)
+    motor_E = StepperWrapper("Gun", step=21, direction=22)
     motor_E.stepper.reverse = False
     motor_E.set_degrees(5)
     print("Stepper erfolgreich initialisiert")

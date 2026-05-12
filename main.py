@@ -14,11 +14,19 @@ start_access_point()
 # === Servo-Test beim Start ===
 print("Servos:", motor_controller.servos)
 motor_controller.set_servo(motor_controller.servos[0], 90)
- 
+
 selected_mission = None
  
 # === SERVER ===
 addr = socket.getaddrinfo("0.0.0.0", 80)[0][-1]
+
+# === 5 Sekunden warten, dann beide Motoren vorwärts fahren ===
+import time
+print("Warte 5 Sekunden...")
+time.sleep(5)
+print("Fahre beide Motoren vorwärts...")
+motor_controller.move_robot("up")
+
 server = socket.socket()
 server.bind(addr)
 server.listen(1)
