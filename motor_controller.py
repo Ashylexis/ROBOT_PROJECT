@@ -39,7 +39,7 @@ class StepperWrapper:
         self.stepper = SmartStepper(stepPin=step, dirPin=direction, accelCurve='smooth2')
         self.micro = micro
         self.stepper.minSpeed = 5
-        self.stepper.maxSpeed = 150
+        self.stepper.maxSpeed = 100
         self.stepper.acceleration = 200
 
     @property
