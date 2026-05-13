@@ -35,12 +35,12 @@ def toggle_servo(servo_num):
 
 # === STEPPER SETUP (NEMA17) ===
 class StepperWrapper:
-    def __init__(self, name, step, direction, micro=32):
+    def __init__(self, name, step, direction, micro=16):
         self.stepper = SmartStepper(stepPin=step, dirPin=direction, accelCurve='smooth2')
         self.micro = micro
         self.stepper.minSpeed = 5
-        self.stepper.maxSpeed = 100
-        self.stepper.acceleration = 200
+        self.stepper.maxSpeed = 50
+        self.stepper.acceleration = 100
 
     @property
     def position(self):
