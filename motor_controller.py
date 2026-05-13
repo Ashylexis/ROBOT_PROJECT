@@ -35,10 +35,10 @@ def toggle_servo(servo_num):
 
 # === STEPPER SETUP (NEMA17) ===
 class StepperWrapper:
-    def __init__(self, name, step, direction, micro=16):
+    def __init__(self, name, step, direction, micro=32):
         self.stepper = SmartStepper(stepPin=step, dirPin=direction, accelCurve='smooth2')
         self.micro = micro
-        self.stepper.minSpeed = 15
+        self.stepper.minSpeed = 5
         self.stepper.maxSpeed = 50
         self.stepper.acceleration = 100
 
@@ -110,7 +110,7 @@ mission_2 = [
 # Hauptmission : Ecke anfahren, 90° rechts abbiegen, weiterfahren, Kanone auf 45° anheben, beide Servos nacheinander feuern, zurücksetzen
 mission_3 = [
     ("drive", 100, 100),     # forward 100mm (clear the corner)
-    ("drive", 100, -100),    # turn right 90° (arc = π × 180 × 90/360 ≈ 141mm) # plus actuel
+    ("drive", 141, -141),    # turn right 90° (arc = π × 180 × 90/360 ≈ 141mm)
     ("drive", 513, 513),     # forward 513mm (613 - 100)
     ("gun", 45),             # raise cannon to 45°
     ("fire", 1),             # fire servo 1
