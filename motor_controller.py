@@ -38,7 +38,7 @@ class StepperWrapper:
     def __init__(self, name, step, direction, micro=16):
         self.stepper = SmartStepper(stepPin=step, dirPin=direction, accelCurve='smooth2')
         self.micro = micro
-        self.stepper.minSpeed = 5
+        self.stepper.minSpeed = 15
         self.stepper.maxSpeed = 50
         self.stepper.acceleration = 100
 
