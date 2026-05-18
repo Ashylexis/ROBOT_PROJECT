@@ -1,15 +1,53 @@
 # file: main.py
  
 import socket
+import time
+import machine
 import motor_controller
 from wifi_setup import start_access_point
 from web_page import webpage
 
- 
+
+class LedBlinker:
+    def __init__(self, pin_name="LED"):
+        self.pin = None
+        self.state = 0
+        self.last_toggle = time.ticks_ms()
+        self.interval_ms = 500
+        try:
+            self.pin = machine.Pin(pin_name, machine.Pin.OUT)
+        except Exception:
+            try:
+                self.pin = machine.Pin(25, machine.Pin.OUT)
+            except Exception:
+                self.pin = None
+        if self.pin:
+            self.pin.value(0)
+
+    def set_rate(self, frequency_hz):
+        if frequency_hz and frequency_hz > 0:
+            self.interval_ms = int(500 / frequency_hz)
+        else:
+            self.interval_ms = 500
+
+    def tick(self):
+        if not self.pin:
+            return
+        now = time.ticks_ms()
+        if time.ticks_diff(now, self.last_toggle) >= self.interval_ms:
+            self.state ^= 1
+            self.pin.value(self.state)
+            self.last_toggle = now
+
+
 print("Main gestartet")
  
+# === LED für Startup und Idle ===
+led = LedBlinker()
+led.set_rate(5)
+
 # === WIFI STARTEN ===
-start_access_point()
+start_access_point(status_callback=led.tick)
  
 # === Servo-Test beim Start ===
 print("Servos:", motor_controller.servos)
@@ -20,17 +58,14 @@ selected_mission = None
 # === SERVER ===
 addr = socket.getaddrinfo("0.0.0.0", 80)[0][-1]
 
-# === 5 Sekunden warten, dann beide Motoren vorwärts fahren ===
-import time
-print("Warte 5 Sekunden...")
-time.sleep(5)
-print("Fahre beide Motoren vorwärts...")
-motor_controller.move_robot("up")
-
 server = socket.socket()
 server.bind(addr)
 server.listen(1)
+server.settimeout(0.05)
 print("Server läuft auf Port 80...")
+
+# Nach Abschluss des Startups in Idle-Modus wechseln
+led.set_rate(1)
  
  
 def send_in_chunks(client, data, chunk_size=1024):
@@ -117,9 +152,14 @@ def handle_post(post_data):
  
  
 while True:
+    led.tick()
     client = None
     try:
         client, client_addr = server.accept()
+    except OSError:
+        continue
+
+    try:
         print("Verbindung von:", client_addr)
         request = client.recv(2048).decode("utf-8", "ignore")
  

@@ -6,7 +6,7 @@ import time
 from config import SSID_AP, PASSWORD_AP
 
 
-def start_access_point():
+def start_access_point(status_callback=None):
     ap = network.WLAN(network.AP_IF)
 
     ap.active(True)
@@ -17,7 +17,9 @@ def start_access_point():
     )
 
     while not ap.active():
-        time.sleep(0.1)
+        if status_callback:
+            status_callback()
+        time.sleep(0.05)
 
     ip = ap.ifconfig()[0]
 
