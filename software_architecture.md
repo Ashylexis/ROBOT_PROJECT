@@ -7,6 +7,7 @@ The robot software is divided into three main responsibilities:
 - `main.py`: startup, network/web server, HTTP handling, and the robot lifecycle entry point.
 - `robot_state.py`: high-level robot state machine and lifecycle management.
 - `motor_controller.py`: actuator control, servo logic, stepper movement, and mission execution.
+- `missions.py`: simple mission table definitions for fight programs.
 
 ## State Machine
 

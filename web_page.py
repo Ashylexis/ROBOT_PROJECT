@@ -231,6 +231,7 @@ def webpage():
  
 <script>
 let currentPreset = null;
+const baseUrl = window.location.origin;
  
 function sendCommand(cmd) {
     console.log("Sending:", cmd);
@@ -256,9 +257,10 @@ function sendCommand(cmd) {
         }
     }
  
-    fetch('http://192.168.4.1/', {
+    fetch(baseUrl + '/', {
         method: 'POST',
-        body: 'cmd=' + cmd
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: new URLSearchParams({cmd: cmd})
     })
     .then(function(response) { return response.text(); })
     .then(function(data) {
@@ -312,9 +314,10 @@ function updateStatus(data, suppressDebug) {
 
 function sendSlider(val) {
     document.getElementById('debug').innerText = "Slider: " + val;
-    fetch('http://192.168.4.1/', {
+    fetch(baseUrl + '/', {
         method: 'POST',
-        body: 'slider=' + val
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: new URLSearchParams({slider: val})
     })
     .then(function(response) { return response.text(); })
     .then(function(data) {
@@ -326,9 +329,10 @@ function sendSlider(val) {
 }
 
 function pollStatus() {
-    fetch('http://192.168.4.1/', {
+    fetch(baseUrl + '/', {
         method: 'POST',
-        body: 'cmd=status'
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: new URLSearchParams({cmd: 'status'})
     })
     .then(function(response) { return response.text(); })
     .then(function(data) {

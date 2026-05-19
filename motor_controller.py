@@ -5,6 +5,7 @@ import math
 import time
 from smartstepper import SmartStepper
 from config import CANNON_SERVO_PINS, ANGLE_SERVO_PIN
+from missions import missions
 
 print("motor_controller geladen")
 
@@ -99,37 +100,8 @@ def set_gun_angle(angle):
     print(f"Gun Stepper -> {angle}°")
     motor_E.stepper.moveTo(float(angle))
 
-# Beispiel-Ablauf: [Typ, Wert1, Wert2, Dauer/Winkel]
-mission_1 = [
-    ("drive", 100, 100),    # 100mm vorwärts
-    ("gun", 45),            # Kanone auf 45 Grad
-    ("fire", 1),            # Servo 1 auslösen
-    ("drive", -50, -50),    # 50mm zurück
-    ("fire", 2)             # Servo 2 auslösen
-]
-
-mission_2 = [
-    ("drive", 0, 150),      # Kurve fahren
-    ("gun", 15),
-    ("fire", 3)
-]
-
-# Hauptmission : Ecke anfahren, 90° rechts abbiegen, weiterfahren, Kanone auf 45° anheben, beide Servos nacheinander feuern, zurücksetzen
-mission_3 = [
-    ("drive", 100, 100),     # forward 100mm (clear the corner)
-    ("drive", 141, -141),    # turn right 90° (arc = π × 180 × 90/360 ≈ 141mm)
-    ("drive", 513, 513),     # forward 513mm (613 - 100)
-    ("gun", 45),             # raise cannon to 45°
-    ("fire", 1),             # fire servo 1
-    ("drive", -50, -50),     # backward 50mm
-    ("fire", 2)              # fire servo 2
-]
-
-missions = {
-    "p1": mission_1,
-    "p2": mission_2,
-    "p3": mission_3,
-}
+# Die Missionslogik bleibt als Tabelle in missions.py.
+# Jede Mission ist eine Folge von Aktionen wie drive, gun und fire.
 
 def execute_mission(mission_id):
     if mission_id not in missions:
