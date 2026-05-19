@@ -276,6 +276,3 @@ def start_mission(mission_id):
 def step_mission():
     mission_executor.step()
 
-def execute_mission(mission_id):
-    print("execute_mission ist veraltet, nutze start_mission()")
-    start_mission(mission_id)

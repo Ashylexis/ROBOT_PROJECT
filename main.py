@@ -5,6 +5,7 @@ import time
 import machine
 import motor_controller
 from robot_state import RobotStateMachine, RobotState
+from switch_panel import SwitchPanel
 from wifi_setup import start_access_point
 from web_page import webpage
 
@@ -52,7 +53,9 @@ robot = RobotStateMachine()
 robot.transition_to(RobotState.STARTUP)
 start_access_point(status_callback=led.tick)
 robot.startup_complete()
- 
+
+switch_panel = SwitchPanel()
+
 # === Servo-Test beim Start ===
 print("Servos:", motor_controller.servos)
 motor_controller.calibrate_servos()
@@ -110,14 +113,25 @@ def handle_post(post_data):
         print("CMD:", cmd)
  
         if cmd in ["p1", "p2", "p3"]:
-            robot.select_mission(cmd)
- 
+            if robot.state != RobotState.IDLE:
+                print("Programmauswahl nur im Idle möglich")
+            elif robot.select_mission(cmd):
+                print("Mission ausgewählt:", cmd)
+                if robot.start_fight():
+                    print("Mission startet direkt:", cmd)
+                    return cmd
+                else:
+                    print("Mission konnte nicht gestartet")
+            else:
+                print("Mission nicht gefunden:", cmd)
         elif cmd == "start":
-            if robot.selected_mission:
+            if robot.state != RobotState.IDLE:
+                print("Start nur im Idle möglich")
+            elif robot.selected_mission:
                 print("Mission bereit:", robot.selected_mission)
                 return robot.selected_mission
             else:
-                print("Keine Mission ausgewaehlt!")
+                print("Keine Mission ausgewählt!")
  
         elif cmd == "load_guns":
             if robot.load_guns():
@@ -161,6 +175,27 @@ while True:
     led.tick()
     motor_controller.step_mission()
     robot.update()
+
+    switch_event = switch_panel.poll()
+    if switch_event:
+        if switch_event['selection']:
+            if robot.state == RobotState.IDLE:
+                robot.select_mission(switch_event['selection'])
+                print("Physische Programmauswahl:", switch_event['selection'])
+            else:
+                print("Physische Programmauswahl nur im Idle möglich")
+        if switch_event['reset']:
+            print("Physische Reset-Taste gedrückt")
+            robot.reset()
+        if switch_event['start']:
+            print("Physische Start-Taste gedrückt")
+            if robot.state != RobotState.IDLE:
+                print("Physischer Start nur im Idle möglich")
+            elif robot.selected_mission and robot.start_fight():
+                print("Mission startet physisch:", robot.selected_mission)
+            else:
+                print("Keine Mission ausgewählt für physischen Start")
+
     client = None
     try:
         client, client_addr = server.accept()
@@ -213,7 +248,7 @@ while True:
                 if "content-length" in line.lower():
                     try:
                         content_length = int(line.split(":")[1].strip())
-                    except:
+                    except Exception:
                         pass
  
             while len(body) < content_length:
@@ -250,5 +285,5 @@ while True:
         if client:
             try:
                 client.close()
-            except:
-                pass
+            except Exception as close_error:
+                print("Fehler beim Schließen des Clients:", close_error)
