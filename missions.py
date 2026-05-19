@@ -10,14 +10,19 @@ missions = {
         ("fire", 2),
         ("fire", 3),
         ("fire", 4), 
-        ("turn", -90),
-        ("drive", 350, 350), 
-        ("turn", 90), 
+        # Vor dem Fluss warten nach dem schiessen und neu ausrichten
+        ("turn", 90),
+        ("drive", 50, 50), 
+        ("drive", -50, -50),
+        ("turn", 180), 
         ("drive", 350, 350),
+        ("turn", 90), 
+        #Vor der brücke warten
+        ("drive", 350, 350), 
         ("turn", 90), 
         ("drive", 350, 350), 
         ("turn", -90), 
-        ("drive", 350, 350),      
+        ("drive", 600, 600),      
     ],
 
     "p2": [
