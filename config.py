@@ -12,9 +12,16 @@ SERVO_FREQUENCY_HZ = 50
 
 # === PHYSIKALISCHE SCHALTER ===
 # Die Schalter ziehen die Pins im EIN-Zustand auf 0V (aktive LOW-Schaltung).
-PROGRAM_SWITCH_PINS = [6, 7]
-START_SWITCH_PIN = 8
-RESET_SWITCH_PIN = 9
+PROGRAM_SWITCH_PINS = [6, 7]  # Im normalen Modus: Programmauswahl (00=none, 01=p1, 10=p2, 11=p3)
+START_SWITCH_PIN = 8           # Im normalen Modus: Mission starten
+RESET_SWITCH_PIN = 9           # Im normalen Modus: Reset
+LOAD_GUNS_MODE_PIN = 10        # Wenn ON: Servo-Modus aktivieren (Pins 6,7,8,9 steuern dann Servos 1-4)
+
+# Im LoadGuns-Modus werden diese Pins umfunktioniert:
+# Pin 6 -> Servo 1 (Gun 1)
+# Pin 7 -> Servo 2 (Gun 2)
+# Pin 8 -> Servo 3 (Gun 3)
+# Pin 9 -> Servo 4 (Gun 4)
 
 # === STEPPER PHYSIK ===
 

@@ -19,51 +19,10 @@ from config import (
     GUN_GEAR_RATIO,
 )
 from missions import missions
+from servo_controller import guns, servos, toggle_servo, load_guns, calibrate_servos
 
 print("motor_controller geladen")
 
-# === SERVO SETUP ===
-servos = []
-states = [False, False, False, False]
-
-# === BUTTON SERVOS ===
-for pin in CANNON_SERVO_PINS:
-    pwm = PWM(Pin(pin))
-    pwm.freq(SERVO_FREQUENCY_HZ)
-    servos.append(pwm)
-
-def set_servo(servo, angle):
-    angle = max(0, min(90, angle))
-    min_duty = 2000
-    max_duty = 8000
-    duty = int(min_duty + (angle / 90) * (max_duty - min_duty))
-    servo.duty_u16(duty)
-
-def toggle_servo(servo_num):
-    index = servo_num - 1
-    if 0 <= index < len(servos):
-        states[index] = not states[index]
-        angle = 90 if states[index] else 0
-        set_servo(servos[index], angle)
-        print(f"Servo {servo_num} -> {angle}°")
-
-def load_guns():
-    print("Lade Guns")
-    for idx, servo in enumerate(servos):
-        states[idx] = True
-        set_servo(servo, 90)
-    time.sleep(1)
-
-def calibrate_servos():
-    print("Kalibriere Servos: öffnen und schließen")
-    for idx, servo in enumerate(servos):
-        states[idx] = True
-        set_servo(servo, 90)
-    time.sleep(0.5)
-    for idx, servo in enumerate(servos):
-        states[idx] = False
-        set_servo(servo, 0)
-    time.sleep(0.1)
 
 # === STEPPER SETUP (NEMA17) ===
 class StepperWrapper:
@@ -250,7 +209,8 @@ class MissionExecutor:
                 return
 
             elif action == "fire":
-                toggle_servo(step[1])
+                gun_num = step[1]
+                guns[gun_num - 1].fire()
                 self.wait_until = time.ticks_add(now, 500)
                 self.current_action = "fire"
                 return
