@@ -6,14 +6,17 @@ import time
 from smartstepper import SmartStepper
 from config import (
     CANNON_SERVO_PINS,
-    ANGLE_SERVO_PIN,
     SERVO_FREQUENCY_HZ,
     WHEEL_DIAMETER_MM,
     TRACK_WIDTH_MM,
-    STEPPER_MICRO,
-    STEPPER_MIN_SPEED,
-    STEPPER_MAX_SPEED,
-    STEPPER_ACCELERATION,
+    DRIVE_STEPPER_MICRO,
+    DRIVE_STEPPER_MIN_SPEED,
+    DRIVE_STEPPER_MAX_SPEED,
+    DRIVE_STEPPER_ACCELERATION,
+    GUN_STEPPER_MICRO,
+    GUN_STEPPER_MIN_SPEED,
+    GUN_STEPPER_MAX_SPEED,
+    GUN_STEPPER_ACCELERATION,
     GUN_GEAR_RATIO,
 )
 from missions import missions
@@ -66,12 +69,17 @@ def calibrate_servos():
 
 # === STEPPER SETUP (NEMA17) ===
 class StepperWrapper:
-    def __init__(self, name, step, direction, micro=STEPPER_MICRO):
+    def __init__(self, name, step, direction, micro,
+                 min_speed,
+                 max_speed,
+                 acceleration,
+                 reverse=False):
         self.stepper = SmartStepper(stepPin=step, dirPin=direction, accelCurve='smooth2')
         self.micro = micro
-        self.stepper.minSpeed = STEPPER_MIN_SPEED
-        self.stepper.maxSpeed = STEPPER_MAX_SPEED
-        self.stepper.acceleration = STEPPER_ACCELERATION
+        self.stepper.minSpeed = min_speed
+        self.stepper.maxSpeed = max_speed
+        self.stepper.acceleration = acceleration
+        self.reverse = reverse
 
     @property
     def position(self):
@@ -88,15 +96,39 @@ class StepperWrapper:
 
 # Initialisierung der 3 Motoren
 try:
-    motor_R = StepperWrapper("Rechts", step=17, direction=18)
-    motor_R.stepper.reverse = False  # Versuche reverse wieder
+    motor_R = StepperWrapper(
+        "Rechts",
+        step=17,
+        direction=18,
+        micro=DRIVE_STEPPER_MICRO,
+        min_speed=DRIVE_STEPPER_MIN_SPEED,
+        max_speed=DRIVE_STEPPER_MAX_SPEED,
+        acceleration=DRIVE_STEPPER_ACCELERATION,
+        reverse=True
+    )
     motor_R.set_wheel(WHEEL_DIAMETER_MM)
 
-    motor_L = StepperWrapper("Links", step=19, direction=20)
-    motor_L.stepper.reverse = True
+    motor_L = StepperWrapper(
+        "Links",
+        step=19,
+        direction=20,
+        micro=DRIVE_STEPPER_MICRO,
+        min_speed=DRIVE_STEPPER_MIN_SPEED,
+        max_speed=DRIVE_STEPPER_MAX_SPEED,
+        acceleration=DRIVE_STEPPER_ACCELERATION,
+        reverse=False
+    )
     motor_L.set_wheel(WHEEL_DIAMETER_MM)
 
-    motor_E = StepperWrapper("Gun", step=21, direction=22)
+    motor_E = StepperWrapper(
+        "Gun",
+        step=21,
+        direction=22,
+        micro=GUN_STEPPER_MICRO,
+        min_speed=GUN_STEPPER_MIN_SPEED,
+        max_speed=GUN_STEPPER_MAX_SPEED,
+        acceleration=GUN_STEPPER_ACCELERATION,
+    )
     motor_E.stepper.reverse = False
     motor_E.set_degrees(GUN_GEAR_RATIO)
     print("Stepper erfolgreich initialisiert")
@@ -104,7 +136,7 @@ except Exception as e:
     print("PIO Fehler: Versuche STRG+D in Thonny", e)
 
 def move_robot(cmd):
-    dist = 50 # 50mm pro Klick
+    dist = 100 # 50mm pro Klick
     if cmd == "up":
         motor_R.stepper.moveTo(dist, relative=True)
         motor_L.stepper.moveTo(dist, relative=True)
@@ -112,11 +144,9 @@ def move_robot(cmd):
         motor_R.stepper.moveTo(-dist, relative=True)
         motor_L.stepper.moveTo(-dist, relative=True)
     elif cmd == "left":
-        motor_L.stepper.moveTo(-dist, relative=True)
-        motor_R.stepper.moveTo(dist, relative=True)
+        turn_degrees(-22.5) 
     elif cmd == "right":
-        motor_L.stepper.moveTo(dist, relative=True)
-        motor_R.stepper.moveTo(-dist, relative=True)
+        turn_degrees(22.5)  
 
 def set_gun_angle(angle):
     # Nutzt den Slider-Wert (0-90) für den Gun-Stepper

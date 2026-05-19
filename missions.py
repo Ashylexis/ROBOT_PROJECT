@@ -2,11 +2,16 @@
 
 missions = {
     "p1": [
-        ("drive", 100, 100),    # 100 mm forward
-        ("gun", 45),            # Kanone auf 45° stellen
-        ("fire", 1),            # Servo 1 auslösen
-        ("drive", -50, -50),    # 50 mm zurück
-        ("fire", 2),            # Servo 2 auslösen
+        ("turn", 90),    
+        ("drive", 600, 600),            
+        ("fire", 1),
+        ("fire", 2),
+        ("fire", 3),
+        ("fire", 4), 
+        ("turn", 90),
+        ("drive", 500, 500), 
+        ("turn", 90), 
+        ("drive", -50, -50),          
     ],
 
     "p2": [
