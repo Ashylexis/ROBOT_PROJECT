@@ -164,6 +164,7 @@ def webpage():
         <button onclick="sendCommand('p2')">P2</button>
         <button onclick="sendCommand('p3')">P3</button>
         <button onclick="sendCommand('load_guns')">L</button>
+        <button onclick="sendCommand('reset')">Reset</button>
         <button onclick="sendCommand('reset_all')" style="color:red">R</button>
     </div>
  

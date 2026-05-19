@@ -24,12 +24,7 @@ missions = {
     ],
 
     "p3": [
-        ("drive", 100, 100),     # vorwärts 100 mm
-        ("drive", 141, -141),    # 90° rechts drehen
-        ("drive", 513, 513),     # weiter vorwärts
-        ("gun", 45),             # Kanone auf 45° anheben
-        ("fire", 1),             # Servo 1 auslösen
-        ("drive", -50, -50),     # zurückfahren
-        ("fire", 2),             # Servo 2 auslösen
+        ("drive", 210.0, 0),      # linkes Rad 1 Umdrehung vorwärts
+        ("drive", 0, 210.0),      # rechtes Rad 1 Umdrehung vorwärts
     ],
 }

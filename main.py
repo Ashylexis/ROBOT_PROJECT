@@ -55,7 +55,7 @@ robot.startup_complete()
  
 # === Servo-Test beim Start ===
 print("Servos:", motor_controller.servos)
-motor_controller.set_servo(motor_controller.servos[0], 90)
+motor_controller.calibrate_servos()
  
 # === SERVER ===
 addr = socket.getaddrinfo("0.0.0.0", 80)[0][-1]
@@ -123,9 +123,13 @@ def handle_post(post_data):
             if robot.load_guns():
                 print("Guns geladen")
 
+        elif cmd == "reset":
+            print("Reset to Idle")
+            robot.reset()
+
         elif cmd == "status":
             print("Status abgefragt")
- 
+
         elif cmd in ["up", "down", "left", "right"]:
             try:
                 motor_controller.move_robot(cmd)

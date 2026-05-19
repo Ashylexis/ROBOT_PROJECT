@@ -4,7 +4,18 @@ from machine import Pin, PWM
 import math
 import time
 from smartstepper import SmartStepper
-from config import CANNON_SERVO_PINS, ANGLE_SERVO_PIN
+from config import (
+    CANNON_SERVO_PINS,
+    ANGLE_SERVO_PIN,
+    SERVO_FREQUENCY_HZ,
+    WHEEL_DIAMETER_MM,
+    TRACK_WIDTH_MM,
+    STEPPER_MICRO,
+    STEPPER_MIN_SPEED,
+    STEPPER_MAX_SPEED,
+    STEPPER_ACCELERATION,
+    GUN_GEAR_RATIO,
+)
 from missions import missions
 
 print("motor_controller geladen")
@@ -16,7 +27,7 @@ states = [False, False, False, False]
 # === BUTTON SERVOS ===
 for pin in CANNON_SERVO_PINS:
     pwm = PWM(Pin(pin))
-    pwm.freq(50)
+    pwm.freq(SERVO_FREQUENCY_HZ)
     servos.append(pwm)
 
 def set_servo(servo, angle):
@@ -41,14 +52,26 @@ def load_guns():
         set_servo(servo, 90)
     time.sleep(1)
 
+
+def calibrate_servos():
+    print("Kalibriere Servos: öffnen und schließen")
+    for idx, servo in enumerate(servos):
+        states[idx] = True
+        set_servo(servo, 90)
+    time.sleep(0.5)
+    for idx, servo in enumerate(servos):
+        states[idx] = False
+        set_servo(servo, 0)
+    time.sleep(0.1)
+
 # === STEPPER SETUP (NEMA17) ===
 class StepperWrapper:
-    def __init__(self, name, step, direction, micro=16):
+    def __init__(self, name, step, direction, micro=STEPPER_MICRO):
         self.stepper = SmartStepper(stepPin=step, dirPin=direction, accelCurve='smooth2')
         self.micro = micro
-        self.stepper.minSpeed = 2
-        self.stepper.maxSpeed = 200
-        self.stepper.acceleration = 50
+        self.stepper.minSpeed = STEPPER_MIN_SPEED
+        self.stepper.maxSpeed = STEPPER_MAX_SPEED
+        self.stepper.acceleration = STEPPER_ACCELERATION
 
     @property
     def position(self):
@@ -67,15 +90,15 @@ class StepperWrapper:
 try:
     motor_R = StepperWrapper("Rechts", step=17, direction=18)
     motor_R.stepper.reverse = False  # Versuche reverse wieder
-    motor_R.set_wheel(67)
+    motor_R.set_wheel(WHEEL_DIAMETER_MM)
 
     motor_L = StepperWrapper("Links", step=19, direction=20)
     motor_L.stepper.reverse = True
-    motor_L.set_wheel(67)
+    motor_L.set_wheel(WHEEL_DIAMETER_MM)
 
     motor_E = StepperWrapper("Gun", step=21, direction=22)
     motor_E.stepper.reverse = False
-    motor_E.set_degrees(5)
+    motor_E.set_degrees(GUN_GEAR_RATIO)
     print("Stepper erfolgreich initialisiert")
 except Exception as e:
     print("PIO Fehler: Versuche STRG+D in Thonny", e)
@@ -102,8 +125,6 @@ def set_gun_angle(angle):
 
 # Die Missionslogik bleibt als Tabelle in missions.py.
 # Jede Mission ist eine Folge von Aktionen wie drive, turn, gun, fire und delay.
-
-TRACK_WIDTH_MM = 120  # Approximation der Spurweite für Drehungen
 
 
 def turn_degrees(degrees):
