@@ -1,5 +1,7 @@
 # file: web_page.py
  
+import json
+ 
 def webpage():
     return """<!DOCTYPE html>
 <html lang="de">
@@ -166,6 +168,7 @@ def webpage():
         <button onclick="sendCommand('load_guns')">L</button>
         <button onclick="sendCommand('reset')">Reset</button>
         <button onclick="sendCommand('reset_all')" style="color:red">R</button>
+        <button onclick="window.location.href='/edit'">Edit</button>
     </div>
  
     <div class="main-grid">
@@ -352,3 +355,42 @@ pollStatus();
 </body>
 </html>
 """
+
+
+def edit_page(missions_json):
+    safe_missions_json = json.dumps(missions_json)
+    return """<!DOCTYPE html>
+<html lang=\"de\">
+<head>
+    <meta charset=\"UTF-8\">
+    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
+    <title>Missionen bearbeiten</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f7f2ff; color: #222; margin: 0; padding: 0; }
+        .container { max-width: 960px; margin: 0 auto; padding: 20px; }
+        h1 { color: #5b007d; }
+        textarea { width: 100%; min-height: 450px; font-family: monospace; font-size: 14px; padding: 10px; border: 1px solid #aaa; border-radius: 6px; box-sizing: border-box; }
+        .toolbar { margin: 10px 0; display: flex; gap: 10px; flex-wrap: wrap; }
+        .toolbar button { background: #7f1ab4; color: white; padding: 10px 18px; border: none; border-radius: 6px; cursor: pointer; }
+        .toolbar button.secondary { background: white; color: #7f1ab4; border: 1px solid #7f1ab4; }
+        .status { margin-top: 12px; color: #333; }
+        .note { margin-top: 12px; font-size: 0.9em; color: #555; }
+        pre { background: #fff; padding: 10px; border: 1px solid #ddd; overflow-x: auto; }
+    </style>
+</head>
+<body>
+<div class=\"container\">
+    <h1>Missionen bearbeiten</h1>
+    <div class=\"toolbar\">
+        <button onclick=\"saveMissions()\">Speichern</button>
+        <button class=\"secondary\" onclick=\"window.location.href='/'\">Zurück</button>
+    </div>
+    <textarea id=\"missionEditor\"></textarea>
+    <div id=\"saveStatus\" class=\"status\">Bearbeite die Missionsdaten und speichere sie.</div>
+    <div class=\"note\">Nutze gültiges JSON. Beispiel:
+        <pre>{"p1": [["drive",100,100],["gun",45],["fire",1]]}</pre>
+    </div>
+</div>
+<script>
+const baseUrl = window.location.origin;
+const missionsData = JSON.parse("""""

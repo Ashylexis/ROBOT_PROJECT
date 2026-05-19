@@ -4,9 +4,39 @@ import socket
 import time
 import machine
 import motor_controller
+import missions
 from robot_state import RobotStateMachine, RobotState
 from wifi_setup import start_access_point
-from web_page import webpage
+from web_page import webpage, edit_page
+
+
+def url_decode(value):
+    result = ''
+    i = 0
+    while i < len(value):
+        c = value[i]
+        if c == '+':
+            result += ' '
+        elif c == '%' and i + 2 < len(value):
+            try:
+                result += chr(int(value[i+1:i+3], 16))
+                i += 2
+            except Exception:
+                result += c
+        else:
+            result += c
+        i += 1
+    return result
+
+
+def parse_form(body):
+    form = {}
+    for part in body.split('&'):
+        if '=' not in part:
+            continue
+        key, value = part.split('=', 1)
+        form[url_decode(key)] = url_decode(value)
+    return form
 
 
 class LedBlinker:
@@ -106,7 +136,8 @@ def handle_post(post_data):
  
     # 2. Commands
     elif post_data.startswith("cmd="):
-        cmd = post_data.split("=")[1].strip()
+        fields = parse_form(post_data)
+        cmd = fields.get('cmd', '').strip()
         print("CMD:", cmd)
  
         if cmd in ["p1", "p2", "p3"]:
@@ -148,6 +179,16 @@ def handle_post(post_data):
         elif cmd == "reset_all":
             robot.emergency_stop()
  
+        elif cmd == "save_missions":
+            mission_data = fields.get('mission_data', '')
+            if mission_data:
+                if missions.save_missions(mission_data):
+                    print("Missions gespeichert")
+                else:
+                    print("Missions speichern fehlgeschlagen")
+            else:
+                print("Keine Missionsdaten erhalten")
+ 
         else:
             print("Unbekannter CMD:", cmd)
  
@@ -188,8 +229,13 @@ while True:
  
         # === GET: Webseite in Chunks senden ===
         elif request.startswith("GET"):
-            print("GET -> sende Webseite")
-            html = webpage()
+            first_line = request.split("\r\n", 1)[0]
+            path = first_line.split(" ")[1] if len(first_line.split(" ")) > 1 else "/"
+            print("GET -> sende Webseite", path)
+            if path == "/edit":
+                html = edit_page(missions.json_dump())
+            else:
+                html = webpage()
             header = (
                 "HTTP/1.1 200 OK\r\n"
                 "Content-Type: text/html; charset=utf-8\r\n"
