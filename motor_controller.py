@@ -35,12 +35,12 @@ def toggle_servo(servo_num):
 
 # === STEPPER SETUP (NEMA17) ===
 class StepperWrapper:
-    def __init__(self, name, step, direction, micro=16):
+    def __init__(self, name, step, direction, micro=32):
         self.stepper = SmartStepper(stepPin=step, dirPin=direction, accelCurve='smooth2')
         self.micro = micro
-        self.stepper.minSpeed = 2
-        self.stepper.maxSpeed = 200
-        self.stepper.acceleration = 50
+        self.stepper.minSpeed = 5
+        self.stepper.maxSpeed = 50
+        self.stepper.acceleration = 100
 
     @property
     def position(self):
@@ -57,7 +57,7 @@ class StepperWrapper:
 
 # Initialisierung der 3 Motoren
 try:
-    motor_R = StepperWrapper("Rechts", step=17, direction=18)
+    motor_R = StepperWrapper("Rechts", step=26, direction=18)
     motor_R.stepper.reverse = False  # Versuche reverse wieder
     motor_R.set_wheel(67)
 
@@ -102,9 +102,19 @@ mission_1 = [
 ]
 
 mission_2 = [
-    ("drive", 0, 150),      # Kurve fahren
-    ("gun", 15),
-    ("fire", 3)
+    ("drive", 150, 150),      # Kurve fahren
+    ("gun", 75),
+    ("fire",1),
+    ("drive", 141, -141),     # 90° rechts abbiegen (π × 180 × 90/360 ≈ 141mm)
+    ("gun", 45),
+    ("fire", 2),
+    ("drive", 200,200),
+    ("drive", 282, -282),   # 180° drehen (π × 180 × 180/360 ≈ 282mm)
+    ("gun", 90)
+    ("fire",3)
+    ("drive", 300,300)
+    ("gun", 15)
+    ("fire",4)
 ]
 
 # Hauptmission : Ecke anfahren, 90° rechts abbiegen, weiterfahren, Kanone auf 45° anheben, beide Servos nacheinander feuern, zurücksetzen
