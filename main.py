@@ -89,10 +89,15 @@ def get_status():
         y = motor_controller.motor_R.position
         r = motor_controller.motor_E.position
         state = robot.state
-        return "{}|{:.1f}|{:.1f}|{:.1f}".format(state, x, y, r)
+        switch_state = switch_panel.current_status()
+        program = switch_state['program'] or 'none'
+        start_on = 'ON' if switch_state['start_on'] else 'OFF'
+        reset_on = 'ON' if switch_state['reset_on'] else 'OFF'
+        return "{}|{:.1f}|{:.1f}|{:.1f}|{}|{}|{}".format(
+            state, x, y, r, program, start_on, reset_on)
     except Exception as e:
         print("get_status Fehler:", e)
-        return "idle|0.0|0.0|0.0"
+        return "idle|0.0|0.0|0.0|none|OFF|OFF"
  
  
 def handle_post(post_data):
@@ -178,17 +183,23 @@ while True:
 
     switch_event = switch_panel.poll()
     if switch_event:
-        if switch_event['selection']:
+        if switch_event['selection_changed']:
             if robot.state == RobotState.IDLE:
                 robot.select_mission(switch_event['selection'])
                 print("Physische Programmauswahl:", switch_event['selection'])
+                if switch_event['start_on']:
+                    print("Start-Schalter ist EIN, starte ausgewähltes Programm")
+                    if robot.selected_mission and robot.start_fight():
+                        print("Mission startet physisch:", robot.selected_mission)
+                    else:
+                        print("Keine Mission ausgewählt für physischen Start")
             else:
                 print("Physische Programmauswahl nur im Idle möglich")
-        if switch_event['reset']:
-            print("Physische Reset-Taste gedrückt")
+        if switch_event['reset_edge']:
+            print("Physischer Reset-Schalter eingeschaltet")
             robot.reset()
-        if switch_event['start']:
-            print("Physische Start-Taste gedrückt")
+        if switch_event['start_edge']:
+            print("Physischer Start-Schalter eingeschaltet")
             if robot.state != RobotState.IDLE:
                 print("Physischer Start nur im Idle möglich")
             elif robot.selected_mission and robot.start_fight():

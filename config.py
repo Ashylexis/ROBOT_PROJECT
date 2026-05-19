@@ -11,7 +11,7 @@ CANNON_SERVO_PINS = [2, 3, 4, 5]
 SERVO_FREQUENCY_HZ = 50
 
 # === PHYSIKALISCHE SCHALTER ===
-
+# Die Schalter ziehen die Pins im EIN-Zustand auf 0V (aktive LOW-Schaltung).
 PROGRAM_SWITCH_PINS = [6, 7]
 START_SWITCH_PIN = 8
 RESET_SWITCH_PIN = 9

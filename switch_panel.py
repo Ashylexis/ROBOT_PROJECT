@@ -11,6 +11,7 @@ PROGRAM_MAP = {
 
 
 def read_switch(pin):
+    # aktive LOW-Schalter: EIN bedeutet 0V / LOW
     return pin.value() == 0
 
 
@@ -41,26 +42,41 @@ class SwitchPanel:
     def selected_program(self):
         return PROGRAM_MAP.get(self._read_program_code())
 
+    def current_status(self):
+        program_code = self._read_program_code()
+        return {
+            'program_code': program_code,
+            'program': PROGRAM_MAP.get(program_code),
+            'start_on': self._read_start(),
+            'reset_on': self._read_reset(),
+        }
+
     def poll(self):
         now = time.ticks_ms()
         program_code = self._read_program_code()
-        start_pressed = self._read_start()
-        reset_pressed = self._read_reset()
+        start_on = self._read_start()
+        reset_on = self._read_reset()
 
-        if program_code != self.last_program_code or start_pressed != self.last_start or reset_pressed != self.last_reset:
+        if program_code != self.last_program_code or start_on != self.last_start or reset_on != self.last_reset:
             self.last_change = now
 
         if time.ticks_diff(now, self.last_change) < self.debounce_ms:
             return None
 
+        if program_code == self.last_program_code and start_on == self.last_start and reset_on == self.last_reset:
+            return None
+
         event = {
             'selection': PROGRAM_MAP.get(program_code),
-            'start': start_pressed and not self.last_start,
-            'reset': reset_pressed and not self.last_reset,
+            'selection_changed': program_code != self.last_program_code,
+            'start_edge': start_on and not self.last_start,
+            'reset_edge': reset_on and not self.last_reset,
+            'start_on': start_on,
+            'reset_on': reset_on,
             'program_code': program_code,
         }
 
         self.last_program_code = program_code
-        self.last_start = start_pressed
-        self.last_reset = reset_pressed
+        self.last_start = start_on
+        self.last_reset = reset_on
         return event
