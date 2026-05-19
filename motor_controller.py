@@ -1,4 +1,3 @@
-# file: motor_controller.py
 
 from machine import Pin, PWM
 import math
@@ -55,7 +54,6 @@ def load_guns():
         set_servo(servo, 90)
     time.sleep(1)
 
-
 def calibrate_servos():
     print("Kalibriere Servos: öffnen und schließen")
     for idx, servo in enumerate(servos):
@@ -73,7 +71,7 @@ class StepperWrapper:
                  min_speed,
                  max_speed,
                  acceleration,
-                 reverse=False):
+                 reverse):
         self.stepper = SmartStepper(stepPin=step, dirPin=direction, accelCurve='smooth2')
         self.micro = micro
         self.stepper.minSpeed = min_speed
@@ -83,8 +81,9 @@ class StepperWrapper:
 
     @property
     def position(self):
-        """Delegiert an SmartStepper.position (wird von main.py für Status gebraucht)"""
-        return self.stepper.position
+        """Gibt die logische Position zurück (korrigiert Vorzeichen bei Invertierung)"""
+        pos = self.stepper.position
+        return -pos if self.reverse else pos
 
     def set_wheel(self, dia):
         # Berechnet Schritte pro mm
@@ -93,6 +92,13 @@ class StepperWrapper:
     def set_degrees(self, gear_ratio):
         # Berechnet Schritte pro Grad
         self.stepper.stepsPerUnit = (200 * self.micro * gear_ratio) / 360.0
+
+    def move_to(self, target, relative=False):
+        """Invertiert die Bewegung dynamisch auf Software-Ebene, falls nötig"""
+        if self.reverse:
+            target = -target
+        self.stepper.moveTo(target, relative=relative)
+
 
 # Initialisierung der 3 Motoren
 try:
@@ -128,8 +134,8 @@ try:
         min_speed=GUN_STEPPER_MIN_SPEED,
         max_speed=GUN_STEPPER_MAX_SPEED,
         acceleration=GUN_STEPPER_ACCELERATION,
+        reverse=False
     )
-    motor_E.stepper.reverse = False
     motor_E.set_degrees(GUN_GEAR_RATIO)
     print("Stepper erfolgreich initialisiert")
 except Exception as e:
@@ -138,31 +144,25 @@ except Exception as e:
 def move_robot(cmd):
     dist = 100 # 50mm pro Klick
     if cmd == "up":
-        motor_R.stepper.moveTo(dist, relative=True)
-        motor_L.stepper.moveTo(dist, relative=True)
+        motor_L.move_to(dist, relative=True)
+        motor_R.move_to(dist, relative=True)
     elif cmd == "down":
-        motor_R.stepper.moveTo(-dist, relative=True)
-        motor_L.stepper.moveTo(-dist, relative=True)
+        motor_L.move_to(-dist, relative=True)
+        motor_R.move_to(-dist, relative=True)
     elif cmd == "left":
         turn_degrees(-22.5) 
     elif cmd == "right":
         turn_degrees(22.5)  
 
 def set_gun_angle(angle):
-    # Nutzt den Slider-Wert (0-90) für den Gun-Stepper
     print(f"Gun Stepper -> {angle}°")
-    motor_E.stepper.moveTo(float(angle))
-
-# Die Missionslogik bleibt als Tabelle in missions.py.
-# Jede Mission ist eine Folge von Aktionen wie drive, turn, gun, fire und delay.
-
+    motor_E.move_to(float(angle))
 
 def turn_degrees(degrees):
-    # Positive Werte drehen nach rechts, negative nach links.
     circumference = math.pi * TRACK_WIDTH_MM
     distance = (circumference * degrees) / 360.0
-    motor_L.stepper.moveTo(distance, relative=True)
-    motor_R.stepper.moveTo(-distance, relative=True)
+    motor_L.move_to(distance, relative=True)
+    motor_R.move_to(-distance, relative=True)
     print(f"Drehe {degrees}° -> {distance:.1f}mm")
 
 
@@ -234,8 +234,8 @@ class MissionExecutor:
             action = step[0]
 
             if action == "drive":
-                motor_L.stepper.moveTo(step[1], relative=True)
-                motor_R.stepper.moveTo(step[2], relative=True)
+                motor_L.move_to(step[1], relative=True)
+                motor_R.move_to(step[2], relative=True)
                 self.current_action = "drive"
                 return
 
@@ -270,14 +270,11 @@ class MissionExecutor:
 
 mission_executor = MissionExecutor()
 
-
 def start_mission(mission_id):
     return mission_executor.start(mission_id)
 
-
 def step_mission():
     mission_executor.step()
-
 
 def execute_mission(mission_id):
     print("execute_mission ist veraltet, nutze start_mission()")
