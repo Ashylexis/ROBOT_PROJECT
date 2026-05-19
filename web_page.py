@@ -26,7 +26,7 @@ def webpage():
  
         .header {
             display: grid;
-            grid-template-columns: repeat(3, 1fr) 0.5fr;
+            grid-template-columns: repeat(5, 1fr);
             border-bottom: 2px solid #800080;
             margin-bottom: 10px;
         }
@@ -82,6 +82,44 @@ def webpage():
             align-items: center;
         }
  
+        .state-panel {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #800080;
+            border-radius: 8px;
+            background: #faf4ff;
+        }
+
+        .state-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .state-box {
+            padding: 12px;
+            border: 2px solid #800080;
+            border-radius: 8px;
+            background: white;
+            font-weight: bold;
+        }
+
+        .state-box.active {
+            background: #f5d7ff;
+            box-shadow: 0 0 0 3px rgba(128, 0, 128, 0.15);
+        }
+
+        .transition-list {
+            font-size: 0.85em;
+            line-height: 1.4;
+        }
+
+        .transition-list span {
+            display: block;
+            margin-bottom: 4px;
+        }
+ 
         .arrows-h, .arrows-v {
             display: flex;
             border: 1px solid #800080;
@@ -125,6 +163,7 @@ def webpage():
         <button onclick="sendCommand('p1')">P1</button>
         <button onclick="sendCommand('p2')">P2</button>
         <button onclick="sendCommand('p3')">P3</button>
+        <button onclick="sendCommand('load_guns')">L</button>
         <button onclick="sendCommand('reset_all')" style="color:red">R</button>
     </div>
  
@@ -161,7 +200,25 @@ def webpage():
             <button onclick="sendCommand('down')">↓</button>
         </div>
     </div>
- 
+
+    <div class="state-panel">
+        <div class="state-grid">
+            <div class="state-box" id="state-startup">Startup</div>
+            <div class="state-box" id="state-idle">Idle</div>
+            <div class="state-box" id="state-loading_guns">Loading Guns</div>
+            <div class="state-box" id="state-fight">Fight</div>
+            <div class="state-box" id="state-finished">Finished</div>
+        </div>
+        <div class="transition-list">
+            <span>Startup → Idle</span>
+            <span>Idle → Loading Guns</span>
+            <span>Idle → Fight</span>
+            <span>Loading Guns → Idle</span>
+            <span>Fight → Finished</span>
+            <span>Finished → Idle</span>
+        </div>
+    </div>
+
     <div class="status-bar">
         <span>X: <b id="valX">0</b></span>
         <span>Y: <b id="valY">0</b></span>
@@ -205,13 +262,10 @@ function sendCommand(cmd) {
     })
     .then(function(response) { return response.text(); })
     .then(function(data) {
-        document.getElementById('debug').innerText = "OK: " + data;
-        let parts = data.split('|');
-        if (parts.length === 3) {
-            document.getElementById('valX').innerText = parts[0];
-            document.getElementById('valY').innerText = parts[1];
-            document.getElementById('valR').innerText = parts[2] + "°";
+        if (cmd !== 'status') {
+            document.getElementById('debug').innerText = "OK";
         }
+        updateStatus(data, cmd === 'status');
         if (cmd === 'start') {
             ['p1', 'p2', 'p3'].forEach(id => {
                 let btn = document.querySelector("button[onclick=\\"sendCommand('" + id + "')\\"]");
@@ -225,6 +279,37 @@ function sendCommand(cmd) {
     });
 }
  
+function setActiveState(state) {
+    document.querySelectorAll('.state-box').forEach(function(box) {
+        box.classList.remove('active');
+    });
+    var active = document.getElementById('state-' + state);
+    if (active) {
+        active.classList.add('active');
+    }
+}
+
+function updateStatus(data, suppressDebug) {
+    let parts = data.split('|');
+    if (parts.length === 4) {
+        var state = parts[0];
+        var x = parts[1];
+        var y = parts[2];
+        var r = parts[3];
+        document.getElementById('valX').innerText = x;
+        document.getElementById('valY').innerText = y;
+        document.getElementById('valR').innerText = r + "°";
+        setActiveState(state);
+        if (!suppressDebug) {
+            document.getElementById('debug').innerText = "Status: " + state;
+        }
+    } else if (parts.length === 3) {
+        document.getElementById('valX').innerText = parts[0];
+        document.getElementById('valY').innerText = parts[1];
+        document.getElementById('valR').innerText = parts[2] + "°";
+    }
+}
+
 function sendSlider(val) {
     document.getElementById('debug').innerText = "Slider: " + val;
     fetch('http://192.168.4.1/', {
@@ -233,16 +318,30 @@ function sendSlider(val) {
     })
     .then(function(response) { return response.text(); })
     .then(function(data) {
-        document.getElementById('debug').innerText = "OK: " + data;
-        let parts = data.split('|');
-        if (parts.length === 3) {
-            document.getElementById('valR').innerText = parts[2] + "°";
-        }
+        updateStatus(data, true);
     })
     .catch(function(error) {
         document.getElementById('debug').innerText = "FEHLER: " + error;
     });
 }
+
+function pollStatus() {
+    fetch('http://192.168.4.1/', {
+        method: 'POST',
+        body: 'cmd=status'
+    })
+    .then(function(response) { return response.text(); })
+    .then(function(data) {
+        updateStatus(data, true);
+        setTimeout(pollStatus, 1000);
+    })
+    .catch(function(error) {
+        document.getElementById('debug').innerText = "FEHLER: " + error;
+        setTimeout(pollStatus, 3000);
+    });
+}
+
+pollStatus();
 </script>
  
 </body>

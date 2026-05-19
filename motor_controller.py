@@ -33,6 +33,13 @@ def toggle_servo(servo_num):
         set_servo(servos[index], angle)
         print(f"Servo {servo_num} -> {angle}°")
 
+def load_guns():
+    print("Lade Guns")
+    for idx, servo in enumerate(servos):
+        states[idx] = True
+        set_servo(servo, 90)
+    time.sleep(1)
+
 # === STEPPER SETUP (NEMA17) ===
 class StepperWrapper:
     def __init__(self, name, step, direction, micro=16):

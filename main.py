@@ -4,6 +4,7 @@ import socket
 import time
 import machine
 import motor_controller
+from robot_state import RobotStateMachine, RobotState
 from wifi_setup import start_access_point
 from web_page import webpage
 
@@ -47,13 +48,14 @@ led = LedBlinker()
 led.set_rate(5)
 
 # === WIFI STARTEN ===
+robot = RobotStateMachine()
+robot.transition_to(RobotState.STARTUP)
 start_access_point(status_callback=led.tick)
+robot.startup_complete()
  
 # === Servo-Test beim Start ===
 print("Servos:", motor_controller.servos)
 motor_controller.set_servo(motor_controller.servos[0], 90)
-
-selected_mission = None
  
 # === SERVER ===
 addr = socket.getaddrinfo("0.0.0.0", 80)[0][-1]
@@ -83,14 +85,14 @@ def get_status():
         x = motor_controller.motor_L.position
         y = motor_controller.motor_R.position
         r = motor_controller.motor_E.position
-        return "{:.1f}|{:.1f}|{:.1f}".format(x, y, r)
+        state = robot.state
+        return "{}|{:.1f}|{:.1f}|{:.1f}".format(state, x, y, r)
     except Exception as e:
         print("get_status Fehler:", e)
-        return "0.0|0.0|0.0"
+        return "idle|0.0|0.0|0.0"
  
  
 def handle_post(post_data):
-    global selected_mission
     print("POST empfangen:", repr(post_data))
  
     # 1. Slider
@@ -108,15 +110,21 @@ def handle_post(post_data):
         print("CMD:", cmd)
  
         if cmd in ["p1", "p2", "p3"]:
-            selected_mission = cmd
-            print("Mission vorgewaehlt:", cmd)
+            robot.select_mission(cmd)
  
         elif cmd == "start":
-            if selected_mission:
-                print("Mission bereit:", selected_mission)
-                return selected_mission
+            if robot.selected_mission:
+                print("Mission bereit:", robot.selected_mission)
+                return robot.selected_mission
             else:
                 print("Keine Mission ausgewaehlt!")
+ 
+        elif cmd == "load_guns":
+            if robot.load_guns():
+                print("Guns geladen")
+
+        elif cmd == "status":
+            print("Status abgefragt")
  
         elif cmd in ["up", "down", "left", "right"]:
             try:
@@ -134,13 +142,7 @@ def handle_post(post_data):
                 print("Servo Fehler:", e)
  
         elif cmd == "reset_all":
-            print("NOT-AUS!")
-            try:
-                motor_controller.motor_L.stepper.stop(emergency=True)
-                motor_controller.motor_R.stepper.stop(emergency=True)
-                motor_controller.motor_E.stepper.stop(emergency=True)
-            except Exception as e:
-                print("Stop Fehler:", e)
+            robot.emergency_stop()
  
         else:
             print("Unbekannter CMD:", cmd)
@@ -234,7 +236,7 @@ while True:
             # Mission NACH dem Senden ausfuehren
             if mission_to_run:
                 print("Starte Mission:", mission_to_run)
-                motor_controller.execute_mission(mission_to_run)
+                robot.start_fight()
  
     except Exception as e:
         print("Fehler im Loop:", e)
