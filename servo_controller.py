@@ -7,21 +7,24 @@ from config import CANNON_SERVO_PINS, SERVO_FREQUENCY_HZ
 
 class Servo:
     """Servo für eine Gun mit expliziten open/close Methoden"""
-    def __init__(self, pwm_pin, frequency):
+    def __init__(self, pwm_pin, frequency, inverted=False):
         self.pwm = PWM(Pin(pwm_pin))
         self.pwm.freq(frequency)
         self.is_open = False
+        self.inverted = inverted  # Wenn True: 0° = offen, 90° = geschlossen
     
     def open(self):
-        """Öffnet die Gun (90°)"""
+        """Öffnet die Gun (90° oder 0° wenn invertiert)"""
         if not self.is_open:
-            self._set_angle(90)
+            angle = 0 if self.inverted else 90
+            self._set_angle(angle)
             self.is_open = True
     
     def close(self):
-        """Schließt die Gun (0°)"""
+        """Schließt die Gun (0° oder 90° wenn invertiert)"""
         if self.is_open:
-            self._set_angle(0)
+            angle = 90 if self.inverted else 0
+            self._set_angle(angle)
             self.is_open = False
     
     def _set_angle(self, angle):
@@ -35,9 +38,9 @@ class Servo:
 
 class Gun:
     """Eine Gun mit integrierter Servo-Kontrolle"""
-    def __init__(self, gun_num, servo_pin, frequency):
+    def __init__(self, gun_num, servo_pin, frequency, inverted=False):
         self.gun_num = gun_num
-        self.servo = Servo(servo_pin, frequency)
+        self.servo = Servo(servo_pin, frequency, inverted=inverted)
     
     def fire(self):
         """Feuert die Gun (öffnet den Servo)"""
@@ -55,7 +58,13 @@ class Gun:
 
 
 # === GUN INSTANCES ===
-guns = [Gun(i+1, pin, SERVO_FREQUENCY_HZ) for i, pin in enumerate(CANNON_SERVO_PINS)]
+# Guns 2 und 3 sind invertiert (andersherum eingebaut)
+guns = [
+    Gun(1, CANNON_SERVO_PINS[0], SERVO_FREQUENCY_HZ, inverted=False),
+    Gun(2, CANNON_SERVO_PINS[1], SERVO_FREQUENCY_HZ, inverted=True),   # Invertiert
+    Gun(3, CANNON_SERVO_PINS[2], SERVO_FREQUENCY_HZ, inverted=True),   # Invertiert
+    Gun(4, CANNON_SERVO_PINS[3], SERVO_FREQUENCY_HZ, inverted=False),
+]
 
 # Compatibility aliases für alte Code
 servos = [gun.servo for gun in guns]
