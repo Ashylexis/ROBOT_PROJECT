@@ -6,7 +6,7 @@ import machine
 import motor_controller
 from wifi_setup import start_access_point
 from web_page import webpage
-
+from config import SW1_PIN, SW2_PIN, SW3_PIN, SW4_PIN, SW5_PIN
 
 class LedBlinker:
     def __init__(self, pin_name="LED"):
@@ -54,6 +54,37 @@ print("Servos:", motor_controller.servos)
 motor_controller.set_servo(motor_controller.servos[0], 90)
 
 selected_mission = None
+
+sw1 = machine.Pin(SW1_PIN, machine.Pin.IN, machine.Pin.PULL_UP)
+sw2 = machine.Pin(SW2_PIN, machine.Pin.IN, machine.Pin.PULL_UP)
+sw3 = machine.Pin(SW3_PIN, machine.Pin.IN, machine.Pin.PULL_UP)
+sw5 = machine.Pin(SW5_PIN, machine.Pin.IN, machine.Pin.PULL_UP)
+
+last_press = 0
+DEBOUNCE_MS = 300
+
+def check_buttons():
+    global selected_mission, last_press
+    now = time.ticks_ms()
+    if time.ticks_diff(now, last_press) < DEBOUNCE_MS:
+        return
+    if sw1.value() == 0:
+        selected_mission = "p1"
+        last_press = now
+        print("Mission 1 selected")
+    elif sw2.value() == 0:
+        selected_mission = "p2"
+        last_press = now
+        print("Mission 2 selected")
+    elif sw3.value() == 0:
+        selected_mission = "p3"
+        last_press = now
+        print("Mission 3 selected")
+    elif sw5.value() == 0 and selected_mission:
+        last_press = now
+        print("Starting mission:", selected_mission)
+        motor_controller.execute_mission(selected_mission)
+        selected_mission = None
  
 # === SERVER ===
 addr = socket.getaddrinfo("0.0.0.0", 80)[0][-1]
@@ -153,6 +184,7 @@ def handle_post(post_data):
  
 while True:
     led.tick()
+    check_buttons()
     client = None
     try:
         client, client_addr = server.accept()

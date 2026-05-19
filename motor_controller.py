@@ -4,7 +4,7 @@ from machine import Pin, PWM
 import math
 import time
 from smartstepper import SmartStepper
-from config import CANNON_SERVO_PINS, ANGLE_SERVO_PIN
+from config import CANNON_SERVO_PINS
 
 print("motor_controller geladen")
 
