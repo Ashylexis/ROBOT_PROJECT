@@ -77,9 +77,14 @@ class RobotStateMachine:
             return False
         self.active_mission = self.selected_mission
         self.transition_to(RobotState.FIGHT)
-        motor_controller.execute_mission(self.active_mission)
-        self.transition_to(RobotState.FINISHED)
+        if not motor_controller.start_mission(self.active_mission):
+            self.transition_to(RobotState.IDLE)
+            return False
         return True
+
+    def update(self):
+        if self.state == RobotState.FIGHT and not motor_controller.mission_executor.is_running():
+            self.transition_to(RobotState.FINISHED)
 
     def finish(self):
         if self.state == RobotState.FIGHT:

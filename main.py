@@ -155,6 +155,8 @@ def handle_post(post_data):
  
 while True:
     led.tick()
+    motor_controller.step_mission()
+    robot.update()
     client = None
     try:
         client, client_addr = server.accept()

@@ -101,30 +101,133 @@ def set_gun_angle(angle):
     motor_E.stepper.moveTo(float(angle))
 
 # Die Missionslogik bleibt als Tabelle in missions.py.
-# Jede Mission ist eine Folge von Aktionen wie drive, gun und fire.
+# Jede Mission ist eine Folge von Aktionen wie drive, turn, gun, fire und delay.
+
+TRACK_WIDTH_MM = 120  # Approximation der Spurweite für Drehungen
+
+
+def turn_degrees(degrees):
+    # Positive Werte drehen nach rechts, negative nach links.
+    circumference = math.pi * TRACK_WIDTH_MM
+    distance = (circumference * degrees) / 360.0
+    motor_L.stepper.moveTo(distance, relative=True)
+    motor_R.stepper.moveTo(-distance, relative=True)
+    print(f"Drehe {degrees}° -> {distance:.1f}mm")
+
+
+class MissionExecutor:
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self.mission_id = None
+        self.steps = None
+        self.step_index = 0
+        self.current_action = None
+        self.wait_until = None
+        self.running = False
+
+    def start(self, mission_id):
+        if mission_id not in missions:
+            print("Mission nicht gefunden", mission_id)
+            return False
+        self.mission_id = mission_id
+        self.steps = missions[mission_id]
+        self.step_index = 0
+        self.current_action = None
+        self.wait_until = None
+        self.running = True
+        print(f"Mission gestartet: {mission_id}")
+        return True
+
+    def stop(self):
+        self.reset()
+
+    def is_running(self):
+        return self.running
+
+    def step(self):
+        if not self.running or self.steps is None:
+            return
+
+        now = time.ticks_ms()
+
+        if self.current_action == "delay":
+            if self.wait_until is None or time.ticks_diff(now, self.wait_until) < 0:
+                return
+            self.current_action = None
+            self.wait_until = None
+            self.step_index += 1
+
+        elif self.current_action == "fire":
+            if self.wait_until is None or time.ticks_diff(now, self.wait_until) < 0:
+                return
+            self.current_action = None
+            self.wait_until = None
+            self.step_index += 1
+
+        elif self.current_action == "gun":
+            if motor_E.stepper.moving:
+                return
+            self.current_action = None
+            self.step_index += 1
+
+        elif self.current_action in ["drive", "turn"]:
+            if motor_L.stepper.moving or motor_R.stepper.moving:
+                return
+            self.current_action = None
+            self.step_index += 1
+
+        while self.step_index < len(self.steps):
+            step = self.steps[self.step_index]
+            action = step[0]
+
+            if action == "drive":
+                motor_L.stepper.moveTo(step[1], relative=True)
+                motor_R.stepper.moveTo(step[2], relative=True)
+                self.current_action = "drive"
+                return
+
+            elif action == "turn":
+                turn_degrees(step[1])
+                self.current_action = "turn"
+                return
+
+            elif action == "gun":
+                set_gun_angle(step[1])
+                self.current_action = "gun"
+                return
+
+            elif action == "fire":
+                toggle_servo(step[1])
+                self.wait_until = time.ticks_add(now, 500)
+                self.current_action = "fire"
+                return
+
+            elif action == "delay":
+                self.wait_until = time.ticks_add(now, step[1])
+                self.current_action = "delay"
+                return
+
+            else:
+                print("Unbekannte Missionsaktion:", action)
+                self.step_index += 1
+
+        print(f"Mission beendet: {self.mission_id}")
+        self.reset()
+
+
+mission_executor = MissionExecutor()
+
+
+def start_mission(mission_id):
+    return mission_executor.start(mission_id)
+
+
+def step_mission():
+    mission_executor.step()
+
 
 def execute_mission(mission_id):
-    if mission_id not in missions:
-        print("Mission nicht gefunden")
-        return
-    
-    steps = missions[mission_id]
-    print(f"Starte Mission: {mission_id}")
-    
-    for step in steps:
-        action = step[0]
-        
-        if action == "drive":
-            motor_L.stepper.moveTo(step[1], relative=True)
-            motor_R.stepper.moveTo(step[2], relative=True)
-            # Warten bis Fahrt beendet, damit Befehle nacheinander kommen
-            while motor_L.stepper.moving or motor_R.stepper.moving:
-                pass 
-                
-        elif action == "gun":
-            set_gun_angle(step[1])
-            while motor_E.stepper.moving: pass
-            
-        elif action == "fire":
-            toggle_servo(step[1])
-            time.sleep(0.5) # Kurze Pause für die Servo-Bewegung
+    print("execute_mission ist veraltet, nutze start_mission()")
+    start_mission(mission_id)
