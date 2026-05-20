@@ -25,8 +25,8 @@ LOAD_GUNS_MODE_PIN = 10        # Wenn ON: Servo-Modus aktivieren (Pins 6,7,8,9 s
 
 # === STEPPER PHYSIK ===
 
-WHEEL_DIAMETER_MM = 67
-TRACK_WIDTH_MM = 130
+WHEEL_DIAMETER_MM = 67 + 3.4
+TRACK_WIDTH_MM = 120
 
 # Drive stepper parameters
 DRIVE_STEPPER_MICRO = 16
