@@ -27,17 +27,16 @@ missions = {
 
                 ],
     "p2": [
-        ("drive", 100, 100),      # 100mm vorwärts
-        ("turn", 360),            # 360° nach rechts drehen
+        ("gun", 90),
+        ("drive", 1000, 1000),      # 100mm vorwärts
+        ("delay", 3000),            # 1 Sekunde warten
+        ("turn", 90),            # 360° nach rechts drehen
+        ("turn", 90),            # 360° nach rechts drehen
+        ("turn", 90),            # 360° nach rechts drehen
+        ("turn", 90),            # 360° nach rechts drehen
         ("turn", -360),           # 360° nach links drehen
-        ("gun", 90),              # Guns auf 90° heben
-        ("fire", 1),
-        ("delay", 1000),          # 1 Sekunde warten
-        ("fire", 2),
-        ("delay", 1000),
-        ("fire", 3),
-        ("delay", 1000),
-        ("fire", 4),
+        ("drive", -1000, -1000),      # 100mm vorwärts
+
     ],
 
     "p3": [
