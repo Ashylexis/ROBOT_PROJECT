@@ -38,45 +38,9 @@ missions = {
         ("drive", -1000, -1000),      # 100mm vorwärts
 
     ],
+
     "p3": [
-        ["drive", 210.0, 0],
-        ["drive", 0, 210.0],
+        ("drive", 210.0, 0),      # linkes Rad 1 Umdrehung vorwärts
+        ("drive", 0, 210.0),      # rechtes Rad 1 Umdrehung vorwärts
     ],
 }
-
-
-def load_missions():
-    try:
-        with open(MISSIONS_FILE, 'r') as f:
-            data = json.load(f)
-            if isinstance(data, dict):
-                return data
-    except Exception as e:
-        print("missions.load_missions fehlgeschlagen:", e)
-    return DEFAULT_MISSIONS.copy()
-
-
-def save_missions(text):
-    try:
-        parsed = json.loads(text)
-        if not isinstance(parsed, dict):
-            raise ValueError("Missions müssen als Dictionary mit Missions-IDs gespeichert werden.")
-        with open(MISSIONS_FILE, 'w') as f:
-            json.dump(parsed, f)
-        global missions
-        missions = parsed
-        return True
-    except Exception as e:
-        print("missions.save_missions fehlgeschlagen:", e)
-        return False
-
-
-def json_dump():
-    try:
-        return json.dumps(missions)
-    except Exception as e:
-        print("missions.json_dump fehlgeschlagen:", e)
-        return "{}"
-
-
-missions = load_missions()
