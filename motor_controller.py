@@ -88,7 +88,7 @@ class StepperWrapper:
 
 # Initialisierung der 3 Motoren
 try:
-    motor_R = StepperWrapper("Rechts", step=17, direction=18)
+    motor_R = StepperWrapper("Rechts", step=26, direction=18)
     motor_R.stepper.reverse = False  # Versuche reverse wieder
     motor_R.set_wheel(WHEEL_DIAMETER_MM)
 
