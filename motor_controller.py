@@ -3,6 +3,8 @@ from machine import Pin, PWM
 import math
 import time
 from smartstepper import SmartStepper
+from smartstepper.axis import Axis
+from smartstepper.multiaxis import MultiAxis
 from config import (
     CANNON_SERVO_PINS,
     SERVO_FREQUENCY_HZ,
@@ -96,18 +98,31 @@ try:
         reverse=False
     )
     motor_E.set_degrees(GUN_GEAR_RATIO)
+    
+    # === MOTOR SYNCHRONIZATION ===
+    # Wrap drive motors in Axis for synchronized control
+    axis_L = Axis(motor_L.stepper, hard_max_speed=DRIVE_STEPPER_MAX_SPEED, hard_max_accel=DRIVE_STEPPER_ACCELERATION)
+    axis_R = Axis(motor_R.stepper, hard_max_speed=DRIVE_STEPPER_MAX_SPEED, hard_max_accel=DRIVE_STEPPER_ACCELERATION)
+    
+    # Create MultiAxis controller for synchronized moves
+    drive_sync = MultiAxis([axis_L, axis_R])
+    
     print("Stepper erfolgreich initialisiert")
 except Exception as e:
     print("PIO Fehler: Versuche STRG+D in Thonny", e)
 
 def move_robot(cmd):
-    dist = 100 # 50mm pro Klick
+    dist = 100 # 100 units per click
     if cmd == "up":
-        motor_L.move_to(dist, relative=True)
-        motor_R.move_to(dist, relative=True)
+        # Move forward synchronously
+        target_L = axis_L.position + dist
+        target_R = axis_R.position + dist
+        drive_sync.move({axis_L: target_L, axis_R: target_R})
     elif cmd == "down":
-        motor_L.move_to(-dist, relative=True)
-        motor_R.move_to(-dist, relative=True)
+        # Move backward synchronously
+        target_L = axis_L.position - dist
+        target_R = axis_R.position - dist
+        drive_sync.move({axis_L: target_L, axis_R: target_R})
     elif cmd == "left":
         turn_degrees(-22.5) 
     elif cmd == "right":
@@ -120,8 +135,10 @@ def set_gun_angle(angle):
 def turn_degrees(degrees):
     circumference = math.pi * TRACK_WIDTH_MM
     distance = (circumference * degrees) / 360.0
-    motor_L.move_to(distance, relative=True)
-    motor_R.move_to(-distance, relative=True)
+    # Synchronized turn: opposite directions for rotation
+    target_L = axis_L.position + distance
+    target_R = axis_R.position - distance
+    drive_sync.move({axis_L: target_L, axis_R: target_R})
     print(f"Drehe {degrees}° -> {distance:.1f}mm")
 
 
