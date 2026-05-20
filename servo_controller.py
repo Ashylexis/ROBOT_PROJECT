@@ -47,14 +47,10 @@ class Gun:
         print(f"Gun {self.gun_num} feuert")
         self.servo.open()
     
-    def stop(self):
-        """Stoppt die Gun (schließt den Servo)"""
-        print(f"Gun {self.gun_num} stoppt")
+    def close(self):
+        """Schließt die Gun (Servo zu)"""
+        print(f"Gun {self.gun_num} schließt")
         self.servo.close()
-    
-    def is_loaded(self):
-        """Prüft, ob die Gun geladen ist"""
-        return self.servo.is_open
 
 
 # === GUN INSTANCES ===
@@ -74,7 +70,7 @@ def toggle_servo(gun_num):
     """Compatibility Funktion: Togglet den Servo (open/close)"""
     gun = guns[gun_num - 1]
     if gun.servo.is_open:
-        gun.stop()
+        gun.close()
     else:
         gun.fire()
 
@@ -94,5 +90,5 @@ def calibrate_servos():
         gun.fire()
     time.sleep(0.5)
     for gun in guns:
-        gun.stop()
+        gun.close()
     time.sleep(0.1)

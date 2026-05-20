@@ -63,15 +63,14 @@ missions = {
         #Ueber die Brücke fahren
         ("gun", 180),
         ("drive", 1200, 1200), 
-("drive", -50, -50),
-("turn", 90+360),
+        ("drive", -50, -50),
+        ("turn", 90+360),
         ("drive", 350, 350), 
         ("drive", -100, -100), 
         ("turn", 360),
         ("gun", 90),
         ("turn", 900),
         ("gun", 45),
-        ("turn", 900),
-
+        ("turn", -900),
                 ],
 }

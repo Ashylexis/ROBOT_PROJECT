@@ -6,6 +6,7 @@ import machine
 import motor_controller
 from robot_state import RobotStateMachine, RobotState
 from config import PROGRAM_SWITCH_PINS, START_SWITCH_PIN, RESET_SWITCH_PIN, LOAD_GUNS_MODE_PIN
+from servo_controller import guns
 from wifi_setup import start_access_point
 from web_page import webpage
 
@@ -52,6 +53,8 @@ led.set_rate(5)
 robot = RobotStateMachine()
 robot.transition_to(RobotState.STARTUP)
 start_access_point(status_callback=led.tick)
+for gun in guns:
+    gun.close()
 robot.startup_complete()
 
 program_pins = [machine.Pin(pin, machine.Pin.IN, machine.Pin.PULL_UP) for pin in PROGRAM_SWITCH_PINS]
@@ -209,7 +212,7 @@ while True:
                 if servo_on:
                     gun.fire()  # Servo offen (90°)
                 else:
-                    gun.stop()  # Servo zu (0°)
+                    gun.close()  # Servo zu (0°)
     else:
         # === NORMALER MODUS: Mission-Steuerung ===
         program_code = read_program_code()
