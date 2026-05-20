@@ -159,6 +159,7 @@ class MissionExecutor:
         self.current_action = None
         self.wait_until = None
         self.running = False
+        self.gun_in_motion = False
 
     def start(self, mission_id):
         if mission_id not in missions:
@@ -199,17 +200,32 @@ class MissionExecutor:
             self.wait_until = None
             self.step_index += 1
 
-        elif self.current_action == "gun":
+        elif self.current_action == "gun_wait":
             if motor_E.stepper.moving:
                 return
             self.current_action = None
             self.step_index += 1
 
         elif self.current_action in ["drive", "turn"]:
-            if motor_L.stepper.moving or motor_R.stepper.moving:
+            if motor_L.stepper.moving or motor_R.stepper.moving or (
+                self.gun_in_motion and motor_E.stepper.moving
+            ):
                 return
             self.current_action = None
             self.step_index += 1
+
+        elif self.gun_in_motion and not motor_E.stepper.moving:
+            self.gun_in_motion = False
+
+        elif self.gun_in_motion and motor_E.stepper.moving:
+            # Allow a following drive/turn to start while the gun is moving,
+            # but block other actions until the gun has stopped.
+            if self.step_index >= len(self.steps):
+                return
+            next_step = self.steps[self.step_index]
+            next_action = next_step[0]
+            if next_action not in ["drive", "turn"]:
+                return
 
         while self.step_index < len(self.steps):
             step = self.steps[self.step_index]
@@ -226,12 +242,20 @@ class MissionExecutor:
                 self.current_action = "turn"
                 return
 
-            elif action == "gun":
+            elif action == "gun_wait":
                 set_gun_angle(step[1])
-                self.current_action = "gun"
+                self.current_action = "gun_wait"
                 return
 
+            elif action == "gun":
+                set_gun_angle(step[1])
+                self.gun_in_motion = True
+                self.step_index += 1
+                continue
+
             elif action == "fire":
+                if self.gun_in_motion and motor_E.stepper.moving:
+                    return
                 gun_num = step[1]
                 guns[gun_num - 1].fire()
                 self.wait_until = time.ticks_add(now, 500)

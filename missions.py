@@ -24,6 +24,12 @@ missions = {
 ("drive", -50, -50),
 ("turn", 90),
         ("drive", 350, 350), 
+        ("drive", -100, -100), 
+        ("gun", 180),
+        ("turn", 360),
+        ("gun", 90),
+        ("turn", 1900),
+        ("gun", 45),
 
                 ],
     "p2": [
@@ -39,8 +45,31 @@ missions = {
 
     ],
 
-    "p3": [
-        ("drive", 210.0, 0),      # linkes Rad 1 Umdrehung vorwärts
-        ("drive", 0, 210.0),      # rechtes Rad 1 Umdrehung vorwärts
-    ],
+ "p3": [
+        ("gun", 45),
+        ("turn", 90),    
+        ("drive", 600, 600),  
+        ("gun", 10),          
+        ("fire", 1),
+        ("turn", -2),  
+        ("fire", 2),
+        ("fire", 3),
+        ("turn", -2),
+        ("fire", 4),
+        # Vor dem Fluss warten nach dem schiessen und neu ausrichten
+        ("turn", -86),
+        ("drive", 360, 360),
+        ("turn", 90), 
+        #Vor der brücke warten
+        ("drive", 1200, 1200), 
+("drive", -50, -50),
+("turn", 90),
+        ("drive", 350, 350), 
+        ("drive", -100, -100), 
+        ("gun", 180),
+        ("turn", 360),
+        ("gun", 90),
+        ("turn", 900),
+
+                ],
 }
