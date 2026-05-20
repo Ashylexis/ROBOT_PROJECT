@@ -29,6 +29,8 @@ class RobotStateMachine:
         RobotState.FINISHED: [RobotState.IDLE],
     }
 
+    AUTO_FINISH_MS = 3 * 60 * 1000
+
     def __init__(self):
         self.state = RobotState.STARTUP
         self.selected_mission = None
@@ -83,8 +85,15 @@ class RobotStateMachine:
         return True
 
     def update(self):
-        if self.state == RobotState.FIGHT and not motor_controller.mission_executor.is_running():
-            self.transition_to(RobotState.FINISHED)
+        now = time.ticks_ms()
+        if self.state == RobotState.FIGHT:
+            if time.ticks_diff(now, self.state_changed_at) >= self.AUTO_FINISH_MS:
+                print("Battle Timeout: 3 Minuten erreicht, wechsle zu FINISHED")
+                motor_controller.mission_executor.stop()
+                self.transition_to(RobotState.FINISHED)
+                return
+            if not motor_controller.mission_executor.is_running():
+                self.transition_to(RobotState.FINISHED)
 
     def finish(self):
         if self.state == RobotState.FIGHT:
