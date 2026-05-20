@@ -17,7 +17,7 @@ missions = {
         ("drive", 50, 50), 
 ("turn", 180),
 ("drive", 70, 70),
-        ("drive", -350, -350),
+        ("drive", -360, -360),
         ("turn", -90), 
         #Vor der brücke warten
         ("drive", 1200, 1200), 

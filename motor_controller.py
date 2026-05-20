@@ -113,15 +113,18 @@ except Exception as e:
 
 def move_robot(cmd):
     dist = 100 # 100 units per click
+    # Apply reverse correction: motor_R is reversed, so negate its movement to go same direction as L
+    dist_R = -dist if motor_R.reverse else dist
+    
     if cmd == "up":
         # Move forward synchronously
         target_L = axis_L.position + dist
-        target_R = axis_R.position + dist
+        target_R = axis_R.position + dist_R
         drive_sync.move({axis_L: target_L, axis_R: target_R})
     elif cmd == "down":
         # Move backward synchronously
         target_L = axis_L.position - dist
-        target_R = axis_R.position - dist
+        target_R = axis_R.position - dist_R
         drive_sync.move({axis_L: target_L, axis_R: target_R})
     elif cmd == "left":
         turn_degrees(-22.5) 
@@ -135,9 +138,12 @@ def set_gun_angle(angle):
 def turn_degrees(degrees):
     circumference = math.pi * TRACK_WIDTH_MM
     distance = (circumference * degrees) / 360.0
-    # Synchronized turn: opposite directions for rotation
+    # For turn: L forward, R backward
+    # Apply reverse correction for motor_R: positive distance makes it go backward (due to reverse flag)
+    dist_R = distance  # Motor_R reversed, so positive=backward motion
+    
     target_L = axis_L.position + distance
-    target_R = axis_R.position - distance
+    target_R = axis_R.position + dist_R  # Both positive creates opposite motion due to reverse
     drive_sync.move({axis_L: target_L, axis_R: target_R})
     print(f"Drehe {degrees}° -> {distance:.1f}mm")
 
