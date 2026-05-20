@@ -228,6 +228,11 @@ def webpage():
         <span>Y: <b id="valY">0</b></span>
         <span>R: <b id="valR">0°</b></span>
     </div>
+    <div class="status-bar">
+        <span>Schalter: <b id="valSwitch">none</b></span>
+        <span>Start: <b id="valStart">OFF</b></span>
+        <span>Reset: <b id="valReset">OFF</b></span>
+    </div>
  
     <div id="debug" class="debug">Bereit</div>
  
@@ -297,7 +302,25 @@ function setActiveState(state) {
 
 function updateStatus(data, suppressDebug) {
     let parts = data.split('|');
-    if (parts.length === 4) {
+    if (parts.length >= 7) {
+        var state = parts[0];
+        var x = parts[1];
+        var y = parts[2];
+        var r = parts[3];
+        var switchProgram = parts[4];
+        var switchStart = parts[5];
+        var switchReset = parts[6];
+        document.getElementById('valX').innerText = x;
+        document.getElementById('valY').innerText = y;
+        document.getElementById('valR').innerText = r + "°";
+        document.getElementById('valSwitch').innerText = switchProgram;
+        document.getElementById('valStart').innerText = switchStart;
+        document.getElementById('valReset').innerText = switchReset;
+        setActiveState(state);
+        if (!suppressDebug) {
+            document.getElementById('debug').innerText = "Status: " + state;
+        }
+    } else if (parts.length === 4) {
         var state = parts[0];
         var x = parts[1];
         var y = parts[2];

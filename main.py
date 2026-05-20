@@ -6,6 +6,7 @@ import machine
 import motor_controller
 import missions
 from robot_state import RobotStateMachine, RobotState
+from config import PROGRAM_SWITCH_PINS, START_SWITCH_PIN, RESET_SWITCH_PIN, LOAD_GUNS_MODE_PIN
 from wifi_setup import start_access_point
 from web_page import webpage, edit_page
 
@@ -82,10 +83,16 @@ robot = RobotStateMachine()
 robot.transition_to(RobotState.STARTUP)
 start_access_point(status_callback=led.tick)
 robot.startup_complete()
- 
-# === Servo-Test beim Start ===
-print("Servos:", motor_controller.servos)
-motor_controller.calibrate_servos()
+
+program_pins = [machine.Pin(pin, machine.Pin.IN, machine.Pin.PULL_UP) for pin in PROGRAM_SWITCH_PINS]
+start_pin = machine.Pin(START_SWITCH_PIN, machine.Pin.IN, machine.Pin.PULL_UP)
+reset_pin = machine.Pin(RESET_SWITCH_PIN, machine.Pin.IN, machine.Pin.PULL_UP)
+load_guns_mode_pin = machine.Pin(LOAD_GUNS_MODE_PIN, machine.Pin.IN, machine.Pin.PULL_UP)
+# Im LoadGuns-Modus: Pins 6,7,8,9 steuern Servos (program_pins + start_pin + reset_pin)
+all_servo_pins = program_pins + [start_pin, reset_pin]
+PROGRAM_MAP = {0: None, 1: 'p1', 2: 'p2', 3: 'p3'}
+
+
  
 # === SERVER ===
 addr = socket.getaddrinfo("0.0.0.0", 80)[0][-1]
@@ -110,16 +117,34 @@ def send_in_chunks(client, data, chunk_size=1024):
         pos += chunk_size
  
  
+def read_gpio(pin):
+    return pin.value() == 0
+
+
+def read_program_code():
+    code = 0
+    for idx, pin in enumerate(program_pins):
+        if read_gpio(pin):
+            code |= 1 << idx
+    return code
+
+
 def get_status():
     try:
         x = motor_controller.motor_L.position
         y = motor_controller.motor_R.position
         r = motor_controller.motor_E.position
         state = robot.state
-        return "{}|{:.1f}|{:.1f}|{:.1f}".format(state, x, y, r)
+        program = PROGRAM_MAP.get(read_program_code()) or 'none'
+        start_on = 'ON' if read_gpio(start_pin) else 'OFF'
+        reset_on = 'ON' if read_gpio(reset_pin) else 'OFF'
+        load_guns_on = 'ON' if read_gpio(load_guns_mode_pin) else 'OFF'
+        servo_states = ''.join(['1' if read_gpio(pin) else '0' for pin in all_servo_pins])
+        return "{}|{:.1f}|{:.1f}|{:.1f}|{}|{}|{}|{}|{}".format(
+            state, x, y, r, program, start_on, reset_on, load_guns_on, servo_states)
     except Exception as e:
         print("get_status Fehler:", e)
-        return "idle|0.0|0.0|0.0"
+        return "idle|0.0|0.0|0.0|none|OFF|OFF|OFF|0000"
  
  
 def handle_post(post_data):
@@ -141,14 +166,25 @@ def handle_post(post_data):
         print("CMD:", cmd)
  
         if cmd in ["p1", "p2", "p3"]:
-            robot.select_mission(cmd)
- 
+            if robot.state != RobotState.IDLE:
+                print("Programmauswahl nur im Idle möglich")
+            elif robot.select_mission(cmd):
+                print("Mission ausgewählt:", cmd)
+                if robot.start_fight():
+                    print("Mission startet direkt:", cmd)
+                    return cmd
+                else:
+                    print("Mission konnte nicht gestartet")
+            else:
+                print("Mission nicht gefunden:", cmd)
         elif cmd == "start":
-            if robot.selected_mission:
+            if robot.state != RobotState.IDLE:
+                print("Start nur im Idle möglich")
+            elif robot.selected_mission:
                 print("Mission bereit:", robot.selected_mission)
                 return robot.selected_mission
             else:
-                print("Keine Mission ausgewaehlt!")
+                print("Keine Mission ausgewählt!")
  
         elif cmd == "load_guns":
             if robot.load_guns():
@@ -202,6 +238,41 @@ while True:
     led.tick()
     motor_controller.step_mission()
     robot.update()
+
+    load_guns_mode_on = read_gpio(load_guns_mode_pin)
+
+    if load_guns_mode_on:
+        # === LOAD GUNS MODUS: Servos mit Pins 6,7,8,9 steuern ===
+        for idx, pin in enumerate(all_servo_pins):
+            if idx < 4:  # Nur 4 Servos
+                gun = motor_controller.guns[idx]
+                servo_on = read_gpio(pin)
+                if servo_on:
+                    gun.fire()  # Servo offen (90°)
+                else:
+                    gun.stop()  # Servo zu (0°)
+    else:
+        # === NORMALER MODUS: Mission-Steuerung ===
+        program_code = read_program_code()
+        selected_program = PROGRAM_MAP.get(program_code)
+        start_on = read_gpio(start_pin)
+        reset_on = read_gpio(reset_pin)
+
+        if reset_on:
+            print("Reset-Schalter ist ON, setze zurück")
+            robot.reset()
+        elif robot.state == RobotState.IDLE:
+            if selected_program and selected_program != robot.selected_mission:
+                robot.select_mission(selected_program)
+                print("Physische Programmauswahl:", selected_program)
+
+            if robot.selected_mission and start_on:
+                print("Start-Schalter ist ON und Mission ausgewählt, starte jetzt")
+                if robot.start_fight():
+                    print("Mission startet physisch:", robot.selected_mission)
+                else:
+                    print("Startversuch fehlgeschlagen")
+
     client = None
     try:
         client, client_addr = server.accept()
@@ -259,7 +330,7 @@ while True:
                 if "content-length" in line.lower():
                     try:
                         content_length = int(line.split(":")[1].strip())
-                    except:
+                    except Exception:
                         pass
  
             while len(body) < content_length:
@@ -296,5 +367,5 @@ while True:
         if client:
             try:
                 client.close()
-            except:
-                pass
+            except Exception as close_error:
+                print("Fehler beim Schließen des Clients:", close_error)
